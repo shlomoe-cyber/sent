@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Chat Sender</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+Hebrew:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f2ee;--ink:#1a1714;--ink2:#4a4540;--ink3:#8a8480;
+    --surface:#fff;--surface2:#ede9e4;--border:#d8d2ca;
+    --accent:#c8440a;--accent-light:#f5ede8;--accent2:#1a6b3c;
+    --shadow:rgba(26,23,20,.08);--radius:12px;
+    --fd:'Syne',sans-serif;--fb:'Noto Sans Hebrew',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--fb);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 0 60px}
+  .header{width:100%;background:var(--ink);padding:22px 32px;display:flex;align-items:center;justify-content:space-between;margin-bottom:48px}
+  .header-logo{font-family:var(--fd);font-size:20px;font-weight:700;color:#fff;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+  .header-sub{font-size:12px;color:rgba(255,255,255,.4);font-family:var(--fd);letter-spacing:1px;text-transform:uppercase}
+  .main{width:100%;max-width:640px;padding:0 20px}
+  .section-label{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;box-shadow:0 2px 12px var(--shadow)}
+  input[type="url"],textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--ink);font-family:var(--fb);font-size:14px;padding:12px 14px;outline:none;transition:border-color .2s,background .2s;resize:none;line-height:1.6}
+  input[type="url"]:focus,textarea:focus{border-color:var(--accent);background:#fff}
+  input::placeholder,textarea::placeholder{color:var(--ink3)}
+  textarea{min-height:110px;max-height:300px;overflow-y:auto}
+  .textarea-wrap{position:relative}
+  .char-count{position:absolute;bottom:10px;left:12px;font-size:11px;color:var(--ink3);font-family:var(--fd)}
+  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .upload-zone{position:relative;border:2px dashed var(--border);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);overflow:hidden}
+  .upload-zone:hover,.upload-zone.over{border-color:var(--accent);background:var(--accent-light)}
+  .upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+  .uz-icon{font-size:26px;display:block;margin-bottom:6px}
+  .uz-title{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--ink2);display:block;margin-bottom:3px}
+  .uz-hint{font-size:11px;color:var(--ink3);line-height:1.4}
+  .previews{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .file-row{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;animation:slideIn .2s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .file-row.oversized{border-color:#f5c0a0;background:#fff5f0}
+  .file-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+  .file-thumb-icon{width:40px;height:40px;border-radius:6px;background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+  .file-info{flex:1;min-width:0}
+  .file-name{font-size:12.5px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .file-size{font-size:11px;color:var(--ink3);margin-top:1px}
+  .file-progress-bar{height:3px;background:var(--border);border-radius:3px;margin-top:5px;overflow:hidden;display:none}
+  .file-progress-bar.show{display:block}
+  .file-progress-fill{height:100%;background:var(--accent2);border-radius:3px;transition:width .3s ease;width:0%}
+  .size-warning{display:none;background:#fff5f0;border:1px solid #f5c0a0;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#a83010;margin-top:10px;line-height:1.5}
+  .size-warning.show{display:block}
+  .send-btn{width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;font-family:var(--fd);font-size:15px;font-weight:700;padding:16px;cursor:pointer;transition:background .15s,transform .1s;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden}
+  .send-btn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .3s ease}
+  .send-btn:hover::before{transform:scaleX(1)}
+  .send-btn:hover{transform:translateY(-1px)}
+  .send-btn:active{transform:translateY(0)}
+  .send-btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .send-btn:disabled::before{display:none}
+  .send-btn>*{position:relative;z-index:1}
+  .progress-wrap{margin-top:16px;display:none}
+  .progress-wrap.active{display:block}
+  .progress-bar-bg{height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:12px}
+  .progress-bar-fill{height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease;width:0%}
+  .log-area{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:'Courier New',monospace;font-size:11.5px;max-height:160px;overflow-y:auto;color:var(--ink2);line-height:1.9}
+  .log-line{display:flex;gap:8px}
+  .log-ts{color:var(--ink3);flex-shrink:0}
+  .log-msg.ok{color:var(--accent2)}
+  .log-msg.err{color:var(--accent)}
+  .log-msg.warn{color:#b07020}
+  .success-banner{display:none;background:#edf7f2;border:1px solid #a8d8bc;border-radius:10px;padding:16px 20px;text-align:center;font-size:14px;color:var(--accent2);font-weight:500;margin-top:14px}
+  .success-banner.show{display:block}
+  .gas-config{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:18px}
+  .gas-config label{font-family:var(--fd);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{width:16px;height:16px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite}
+  @media(max-width:480px){.upload-grid{grid-template-columns:1fr}.header{padding:18px 20px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-logo"><span class="dot"></span>Chat Sender</div>
+  <div class="header-sub">Google Chat</div>
+</div>
+<div class="main">
+  <div class="card">
+    <div class="section-label">הגדרות</div>
+    <div class="gas-config">
+      <label>Google Apps Script URL</label>
+      <input type="url" id="gasUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-label">הודעה</div>
+    <div class="textarea-wrap">
+      <textarea id="msgText" placeholder="כתוב את ההודעה כאן..." oninput="updateCharCount(this)"></textarea>
+      <span class="char-count" id="charCount">0</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-label">קבצים מצורפים</div>
+    <div class="upload-grid">
+      <div class="upload-zone" id="imgZone">
+        <input type="file" id="imgInput" accept="image/*" multiple onchange="addFiles(this.files)" />
+        <span class="uz-icon">🖼️</span>
+        <span class="uz-title">תמונות</span>
+        <span class="uz-hint">PNG · JPG · GIF · WebP</span>
+      </div>
+      <div class="upload-zone" id="vidZone">
+        <input type="file" id="vidInput" accept="video/*" multiple onchange="addFiles(this.files)" />
+        <span class="uz-icon">🎬</span>
+        <span class="uz-title">סרטונים</span>
+        <span class="uz-hint">MP4 · MOV · AVI · עד 512MB</span>
+      </div>
+    </div>
+    <div class="previews" id="previews"></div>
+    <div class="size-warning" id="sizeWarn">⚠️ קובץ אחד או יותר חורגים מ-512MB.</div>
+  </div>
+  <div class="card">
+    <button class="send-btn" id="sendBtn" onclick="handleSend()">
+      <span id="btnIcon">📨</span>
+      <span id="btnText">שלח הודעה</span>
+    </button>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="log-area" id="logArea"></div>
+    </div>
+    <div class="success-banner" id="successBanner">✅ ההודעה נשלחה בהצלחה!</div>
+  </div>
+</div>
+<script>
+const MAX_SIZE = 512 * 1024 * 1024;
+let files = [], idCtr = 0;
+
+window.addEventListener('DOMContentLoaded', () => {
+  const s = localStorage.getItem('gas_url');
+  if (s) document.getElementById('gasUrl').value = s;
+});
+document.getElementById('gasUrl').addEventListener('input', e =>
+  localStorage.setItem('gas_url', e.target.value.trim()));
+
+function updateCharCount(el) {
+  document.getElementById('charCount').textContent = el.value.length;
+}
+
+['imgZone','vidZone'].forEach(id => {
+  const z = document.getElementById(id);
+  z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', () => z.classList.remove('over'));
+});
+
+function addFiles(list) {
+  Array.from(list).forEach(f => files.push({ file: f, id: ++idCtr }));
+  renderPreviews();
+  document.getElementById('imgInput').value = '';
+  document.getElementById('vidInput').value = '';
+}
+
+function removeFile(id) {
+  files = files.filter(f => f.id !== id);
+  renderPreviews();
+}
+
+function fmtBytes(b) {
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+}
+
+function renderPreviews() {
+  const c = document.getElementById('previews');
+  c.innerHTML = '';
+  let hasOver = false;
+  files.forEach(({ file, id }) => {
+    const over = file.size > MAX_SIZE;
+    if (over) hasOver = true;
+    const row = document.createElement('div');
+    row.className = 'file-row' + (over ? ' oversized' : '');
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.className = 'file-thumb';
+      img.src = URL.createObjectURL(file);
+      row.appendChild(img);
+    } else {
+      const ic = document.createElement('div');
+      ic.className = 'file-thumb-icon';
+      ic.textContent = '🎬';
+      row.appendChild(ic);
+    }
+    const info = document.createElement('div');
+    info.className = 'file-info';
+    info.innerHTML = '<div class="file-name">' + file.name + '</div>' +
+      '<div class="file-size">' + fmtBytes(file.size) + (over ? ' — <span style="color:#a83010">גדול מדי!</span>' : '') + '</div>' +
+      '<div class="file-progress-bar" id="pb_' + id + '"><div class="file-progress-fill" id="pf_' + id + '"></div></div>';
+    row.appendChild(info);
+    const rm = document.createElement('button');
+    rm.style.cssText = 'background:none;border:none;cursor:pointer;color:#8a8480;font-size:18px;padding:2px 4px;line-height:1';
+    rm.textContent = '×';
+    rm.onclick = () => removeFile(id);
+    row.appendChild(rm);
+    c.appendChild(row);
+  });
+  document.getElementById('sizeWarn').classList.toggle('show', hasOver);
+}
+
+function clearLog() {
+  document.getElementById('logArea').innerHTML = '';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressWrap').classList.remove('active');
+  document.getElementById('successBanner').classList.remove('show');
+}
+
+function log(msg, type) {
+  document.getElementById('progressWrap').classList.add('active');
+  const ts = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const a = document.getElementById('logArea');
+  const d = document.createElement('div');
+  d.className = 'log-line';
+  d.innerHTML = '<span class="log-ts">' + ts + '</span><span class="log-msg ' + (type||'') + '">' + msg + '</span>';
+  a.appendChild(d);
+  a.scrollTop = a.scrollHeight;
+}
+
+function setProgress(p) { document.getElementById('progressFill').style.width = p + '%'; }
+
+function setSending(yes) {
+  document.getElementById('sendBtn').disabled = yes;
+  document.getElementById('btnIcon').textContent = yes ? '' : '📨';
+  document.getElementById('btnText').textContent = yes ? 'שולח...' : 'שלח הודעה';
+  const ex = document.getElementById('dynSpin');
+  if (ex) ex.remove();
+  if (yes) {
+    const sp = document.createElement('div');
+    sp.className = 'spinner'; sp.id = 'dynSpin';
+    document.getElementById('sendBtn').insertBefore(sp, document.getElementById('btnText'));
+  }
+}
+
+// העלאה ל-litterbox.catbox.moe — חינם, בלי הרשמה, עד 1GB
+function uploadTo0x0(file, fileId) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('reqtype', 'fileupload');
+    fd.append('time', '72h');
+    fd.append('fileToUpload', file, file.name);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://litterbox.catbox.moe/resources/internals/api.php');
+    xhr.timeout = 600000; // 10 דק' לקבצים גדולים
+
+    xhr.upload.addEventListener('progress', evt => {
+      if (!evt.lengthComputable) return;
+      const pct = Math.round(evt.loaded / evt.total * 100);
+      const bar = document.getElementById('pb_' + fileId);
+      const fill = document.getElementById('pf_' + fileId);
+      if (bar) bar.classList.add('show');
+      if (fill) fill.style.width = pct + '%';
+    });
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const url = xhr.responseText.trim();
+        resolve(url);
+      } else {
+        reject(new Error('litterbox החזיר שגיאה ' + xhr.status));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('לא הצליח להתחבר ל-litterbox'));
+    xhr.ontimeout = () => reject(new Error('Timeout בהעלאה'));
+
+    xhr.send(fd);
+  });
+}
+
+// שליחת JSON ל-GAS (טקסט + רשימת URLs)
+function sendToGAS(gasUrl, text, fileUrls, fileNames) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('text', text || '');
+    fd.append('fileUrls', JSON.stringify(fileUrls));
+    fd.append('fileNames', JSON.stringify(fileNames));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', gasUrl);
+    xhr.timeout = 300000;
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch(_) { resolve({ status: 'ok' }); }
+      } else {
+        reject(new Error('GAS החזיר שגיאה ' + xhr.status + ': ' + xhr.responseText.slice(0,200)));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('לא ניתן להתחבר ל-GAS'));
+    xhr.ontimeout = () => reject(new Error('GAS לא הגיב'));
+
+    xhr.send(fd);
+  });
+}
+
+async function handleSend() {
+  clearLog();
+  const gasUrl  = document.getElementById('gasUrl').value.trim();
+  const msgText = document.getElementById('msgText').value.trim();
+
+  if (!gasUrl)                                 { log('חסר Google Apps Script URL', 'err'); return; }
+  if (!msgText && files.length === 0)          { log('יש להזין הודעה או לצרף קובץ', 'warn'); return; }
+  if (files.find(f => f.file.size > MAX_SIZE)) { log('קובץ חורג מ-512MB', 'err'); return; }
+
+  setSending(true);
+
+  try {
+    const valid = files.filter(f => f.file.size <= MAX_SIZE);
+    const fileUrls = [];
+    const fileNames = [];
+
+    // שלב 1: העלה כל קובץ ל-litterbox
+    for (let i = 0; i < valid.length; i++) {
+      const { file, id } = valid[i];
+      log('מעלה ' + (i+1) + '/' + valid.length + ': ' + file.name + ' (' + fmtBytes(file.size) + ')');
+      const url = await uploadTo0x0(file, id);
+      fileUrls.push(url);
+      fileNames.push(file.name);
+      log('✓ ' + file.name + ' → ' + url, 'ok');
+      setProgress(Math.round((i + 1) / (valid.length + 1) * 80));
+    }
+
+    // שלב 2: שלח ל-GAS את הטקסט + ה-URLs
+    log('שולח ל-Google Chat...');
+    const r = await sendToGAS(gasUrl, msgText, fileUrls, fileNames);
+    if (r && r.status === 'error') throw new Error(r.message);
+
+    setProgress(100);
+    log('✅ נשלח בהצלחה!', 'ok');
+    document.getElementById('successBanner').classList.add('show');
+
+    document.getElementById('msgText').value = '';
+    updateCharCount(document.getElementById('msgText'));
+    files = [];
+    renderPreviews();
+
+  } catch (err) {
+    log('שגיאה: ' + err.message, 'err');
+  }
+
+  setSending(false);
+}
+</script>
+</body>
+</html>
